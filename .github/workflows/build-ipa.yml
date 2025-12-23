@@ -1,0 +1,68 @@
+name: Build unsigned IPA (for TrollStore)
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect project & scheme
+        id: detect
+        shell: bash
+        run: |
+          set -e
+          PROJECT=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
+          if [ -z "$PROJECT" ]; then
+            echo "No .xcodeproj found"; exit 1
+          fi
+          echo "PROJECT=$PROJECT" >> $GITHUB_ENV
+
+          # Extract first scheme listed under "Schemes:"
+          SCHEME=$(xcodebuild -list -project "$PROJECT" | awk '
+            $0 ~ /Schemes:/ {inSchemes=1; next}
+            inSchemes && NF {print $1; exit}
+          ')
+          if [ -z "$SCHEME" ]; then
+            echo "No scheme found"; exit 1
+          fi
+          echo "SCHEME=$SCHEME" >> $GITHUB_ENV
+
+          echo "Using PROJECT=$PROJECT"
+          echo "Using SCHEME=$SCHEME"
+
+      - name: Build (no codesign)
+        shell: bash
+        run: |
+          set -e
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package to IPA
+        shell: bash
+        run: |
+          set -e
+          APP_PATH=$(find build -type d -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app found in build output"; exit 1
+          fi
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          /usr/bin/zip -r unsigned.ipa Payload
+          ls -lh unsigned.ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-ipa
+          path: unsigned.ipa
