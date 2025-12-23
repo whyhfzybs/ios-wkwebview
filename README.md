@@ -43,10 +43,10 @@ There are 5 ATTENTION: ACTION REQUIRED marks in the code
 You can Cmd+F to quickly find them in code  
 Those steps are:
 1. Choose Status Bar background color
-2. Put your remote website URL here
+2. https://prompt-fill-olive.vercel.app
 3. Choose if you want to allow users to use pinch to zoom gesture and double tap to zoom in webview
 4. Choose if you want Status Bar Text Color to be white or black
-5. Put your remote website URL here (one more time)
+5. https://prompt-fill-olive.vercel.app
 
 Currently, this iOS WKWebView App Template works by opening and browsing remote website by its URL  
 
